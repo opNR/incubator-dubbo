@@ -60,22 +60,30 @@ public class ExtensionLoader<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtensionLoader.class);
 
+    /// Java SPI 的配置目录
     private static final String SERVICES_DIRECTORY = "META-INF/services/";
 
+    /// 用户自定义的拓展实现
     private static final String DUBBO_DIRECTORY = "META-INF/dubbo/";
 
+    /// Dubbo 内部提供的拓展实现
     private static final String DUBBO_INTERNAL_DIRECTORY = DUBBO_DIRECTORY + "internal/";
 
+    /// 拓展名分隔符，使用逗号
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
 
+    /// 拓展加载器集合: key-拓展接口
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
 
+    ///拓展实现类集合: key-拓展实现类,value-拓展对象
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
 
+    /// 拓展接口
     private final Class<?> type;
 
+    /// 对象工厂, 用于调用 {@link #injectExtension(Object)} 方法，向拓展对象注入依赖属性。
     private final ExtensionFactory objectFactory;
 
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
@@ -102,6 +110,7 @@ public class ExtensionLoader<T> {
         return type.isAnnotationPresent(SPI.class);
     }
 
+    /// 根据拓展点的接口，获得拓展加载器
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         if (type == null)

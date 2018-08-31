@@ -63,9 +63,12 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
 
     private static final Logger logger = LoggerFactory.getLogger(DubboBeanDefinitionParser.class);
     private static final Pattern GROUP_AND_VERION = Pattern.compile("^[\\-.0-9_a-zA-Z]+(\\:[\\-.0-9_a-zA-Z]+)?$");
+    /// Bean对象的类
     private final Class<?> beanClass;
+    /// 是否需要 Bean 的 id 属性
     private final boolean required;
 
+    ///
     public DubboBeanDefinitionParser(Class<?> beanClass, boolean required) {
         this.beanClass = beanClass;
         this.required = required;
@@ -76,8 +79,11 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         RootBeanDefinition beanDefinition = new RootBeanDefinition();
         beanDefinition.setBeanClass(beanClass);
         beanDefinition.setLazyInit(false);
+
+        /// 解析配置对象的 id 。若不存在，则进行生成。
         String id = element.getAttribute("id");
         if ((id == null || id.length() == 0) && required) {
+            /// 生成 id ,不同的配置对象，会存在不同。
             String generatedBeanName = element.getAttribute("name");
             if (generatedBeanName == null || generatedBeanName.length() == 0) {
                 if (ProtocolConfig.class.equals(beanClass)) {
@@ -90,6 +96,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 generatedBeanName = beanClass.getName();
             }
             id = generatedBeanName;
+            /// 若 id 已存在，通过自增序列，解决重复
             int counter = 2;
             while (parserContext.getRegistry().containsBeanDefinition(id)) {
                 id = generatedBeanName + (counter++);
@@ -99,9 +106,13 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             if (parserContext.getRegistry().containsBeanDefinition(id)) {
                 throw new IllegalStateException("Duplicate spring bean id " + id);
             }
+            /// 添加到 Spring 的注册表
             parserContext.getRegistry().registerBeanDefinition(id, beanDefinition);
+            /// 设置 Bean 的 `id` 属性值
             beanDefinition.getPropertyValues().addPropertyValue("id", id);
         }
+
+        /// 处理 `<dubbo:protocol` /> 的特殊情况
         if (ProtocolConfig.class.equals(beanClass)) {
             for (String name : parserContext.getRegistry().getBeanDefinitionNames()) {
                 BeanDefinition definition = parserContext.getRegistry().getBeanDefinition(name);
@@ -113,7 +124,9 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                     }
                 }
             }
-        } else if (ServiceBean.class.equals(beanClass)) {
+        }
+        /// 处理 `<dubbo:service />` 的属性 `class`
+        else if (ServiceBean.class.equals(beanClass)) {
             String className = element.getAttribute("class");
             if (className != null && className.length() > 0) {
                 RootBeanDefinition classDefinition = new RootBeanDefinition();
@@ -122,13 +135,21 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 parseProperties(element.getChildNodes(), classDefinition);
                 beanDefinition.getPropertyValues().addPropertyValue("ref", new BeanDefinitionHolder(classDefinition, id + "Impl"));
             }
-        } else if (ProviderConfig.class.equals(beanClass)) {
+        }
+        /// 解析 `<dubbo:provider />` 的内嵌子元素 `<dubbo:service />`
+        else if (ProviderConfig.class.equals(beanClass)) {
             parseNested(element, parserContext, ServiceBean.class, true, "service", "provider", id, beanDefinition);
-        } else if (ConsumerConfig.class.equals(beanClass)) {
+        }
+        /// 解析 `<dubbo:consumer />` 的内嵌子元素 `<dubbo:reference />`
+        else if (ConsumerConfig.class.equals(beanClass)) {
             parseNested(element, parserContext, ReferenceBean.class, false, "reference", "consumer", id, beanDefinition);
         }
+
+        /// 已解析的属性集合
         Set<String> props = new HashSet<String>();
+
         ManagedMap parameters = null;
+        /// 循环 Bean 对象的 setting 方法，将属性添加到 Bean 对象的属性赋值
         for (Method setter : beanClass.getMethods()) {
             String name = setter.getName();
             if (name.length() > 3 && name.startsWith("set")

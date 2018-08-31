@@ -89,6 +89,7 @@ public abstract class AbstractConfig implements Serializable {
         return value;
     }
 
+    /// 读取环境变量和 properties 配置到配置对象
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
             return;
@@ -172,6 +173,7 @@ public abstract class AbstractConfig implements Serializable {
         appendParameters(parameters, config, null);
     }
 
+    /// 将配置对象的属性，添加到参数集合
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         if (config == null) {
@@ -243,6 +245,7 @@ public abstract class AbstractConfig implements Serializable {
         appendAttributes(parameters, config, null);
     }
 
+    /// 将 @Parameter(attribute = true) 配置对象的属性，添加到参数集合
     protected static void appendAttributes(Map<Object, Object> parameters, Object config, String prefix) {
         if (config == null) {
             return;
@@ -407,6 +410,7 @@ public abstract class AbstractConfig implements Serializable {
         this.id = id;
     }
 
+    /// 读取注解配置到配置对象
     protected void appendAnnotation(Class<?> annotationClass, Object annotation) {
         Method[] methods = annotationClass.getMethods();
         for (Method method : methods) {
